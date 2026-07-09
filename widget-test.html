@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Chatwoot Widget Test</title>
+  </head>
+  <body>
+    <main>
+      <h1>Chatwoot Widget Test Page</h1>
+      <p>If Chatwoot is running, the chat bubble should appear in the bottom-right corner.</p>
+    </main>
+
+    <script>
+      window.chatwootSettings = {
+        position: 'right',
+        type: 'standard',
+        launcherTitle: '',
+      };
+
+      (function (d, t) {
+        var BASE_URL = 'http://localhost:3000';
+        var SDK_URL = 'http://localhost:3036';
+        var g = d.createElement(t);
+        var s = d.getElementsByTagName(t)[0];
+
+        g.src = SDK_URL + '/vite-dev/entrypoints/sdk.js';
+        g.type = 'module';
+        g.async = true;
+        s.parentNode.insertBefore(g, s);
+
+        g.onload = function () {
+          window.chatwootSDK.run({
+            websiteToken: 'rCWB5tttxCw5QtoQFXKwj4Sg',
+            baseUrl: BASE_URL,
+          });
+        };
+      })(document, 'script');
+    </script>
+  </body>
+</html>
