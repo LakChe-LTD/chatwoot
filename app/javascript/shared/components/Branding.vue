@@ -1,6 +1,4 @@
 <script>
-import { useBranding } from 'shared/composables/useBranding';
-
 const {
   LOGO_THUMBNAIL: logoThumbnail,
   BRAND_NAME: brandName,
@@ -14,12 +12,6 @@ export default {
       default: false,
     },
   },
-  setup() {
-    const { replaceInstallationName } = useBranding();
-    return {
-      replaceInstallationName,
-    };
-  },
   data() {
     return {
       globalConfig: {
@@ -30,6 +22,10 @@ export default {
     };
   },
   computed: {
+    poweredByLabel() {
+      const brandLabel = this.globalConfig.brandName || 'LAKCHE LLC';
+      return this.$t('POWERED_BY').replace(/Chatwoot/g, brandLabel);
+    },
     brandRedirectURL() {
       try {
         const referrerHost = this.$store.getters['appConfig/getReferrerHost'];
@@ -68,7 +64,7 @@ export default {
         :src="globalConfig.logoThumbnail"
       />
       <span>
-        {{ replaceInstallationName($t('POWERED_BY')) }}
+        {{ poweredByLabel }}
       </span>
     </a>
   </div>
