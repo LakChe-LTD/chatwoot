@@ -23,6 +23,7 @@ ARG NODE_OPTIONS="--max-old-space-size=4096 --openssl-legacy-provider"
 ENV NODE_OPTIONS ${NODE_OPTIONS}
 
 ENV BUNDLE_PATH="/gems"
+ARG GIT_SHA="unknown"
 
 RUN apk update && apk add --no-cache \
   openssl \
@@ -86,8 +87,8 @@ RUN if [ "$RAILS_ENV" = "production" ]; then \
   && rm -rf spec node_modules tmp/cache; \
   fi
 
-# Generate .git_sha file with current commit hash
-RUN git rev-parse HEAD > /app/.git_sha
+# Generate .git_sha file without requiring a git checkout in the build context
+RUN if [ -d .git ]; then git rev-parse HEAD > /app/.git_sha; else printf '%s\n' "${GIT_SHA}" > /app/.git_sha; fi
 
 # Remove unnecessary files
 RUN rm -rf /gems/ruby/3.4.0/cache/*.gem \

@@ -5,6 +5,8 @@ services:
     build:
       context: .
       dockerfile: docker/Dockerfile
+      args:
+        GIT_SHA: ${GIT_SHA:-unknown}
     image: ${CHATWOOT_IMAGE:-lakchelink:latest}
     env_file: .env ## Change this file for customized env variables
     volumes:
