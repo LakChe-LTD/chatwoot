@@ -1,0 +1,56 @@
+name: Deploy LakcheLink
+
+on:
+  push:
+    branches:
+      - lakchelink-main
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-lakchelink-main
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      VPS_HOST: ${{ secrets.VPS_HOST }}
+      VPS_USER: ${{ secrets.VPS_USER || 'root' }}
+      VPS_PORT: ${{ secrets.VPS_PORT || '22' }}
+      VPS_PASSWORD: ${{ secrets.VPS_PASSWORD }}
+      DEPLOY_PATH: /opt/lakchelink
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install rsync and sshpass
+        run: sudo apt-get update && sudo apt-get install -y rsync sshpass
+
+      - name: Sync source to VPS
+        run: |
+          sshpass -p "$VPS_PASSWORD" rsync -az --delete \
+            -e "ssh -p $VPS_PORT -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" \
+            --exclude '.git' \
+            --exclude '.github/workflows/deploy_lakchelink.yml' \
+            --exclude 'node_modules' \
+            --exclude 'log' \
+            --exclude 'tmp' \
+            --exclude 'storage' \
+            --exclude '.env' \
+            ./ "${VPS_USER}@${VPS_HOST}:${DEPLOY_PATH}/"
+
+      - name: Deploy on VPS
+        run: |
+          sshpass -p "$VPS_PASSWORD" ssh -p "$VPS_PORT" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+            "${VPS_USER}@${VPS_HOST}" <<'EOF'
+          set -euo pipefail
+          cd /opt/lakchelink
+          docker compose -f docker-compose.production.yaml up -d postgres redis
+          docker compose -f docker-compose.production.yaml run --rm rails bundle exec rails db:chatwoot_prepare
+          docker compose -f docker-compose.production.yaml up -d --build --remove-orphans
+          docker compose -f docker-compose.production.yaml ps
+          curl -fsS http://127.0.0.1:3000/api >/dev/null
+          EOF

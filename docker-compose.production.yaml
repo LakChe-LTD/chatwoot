@@ -2,7 +2,10 @@ version: '3'
 
 services:
   base: &base
-    image: chatwoot/chatwoot:latest
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    image: ${CHATWOOT_IMAGE:-lakchelink:latest}
     env_file: .env ## Change this file for customized env variables
     volumes:
       - storage_data:/app/storage
@@ -42,10 +45,9 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     environment:
-      - POSTGRES_DB=chatwoot
-      - POSTGRES_USER=postgres
-      # Please provide your own password.
-      - POSTGRES_PASSWORD=
+      - POSTGRES_DB=${POSTGRES_DATABASE:-lakchelink_production}
+      - POSTGRES_USER=${POSTGRES_USERNAME:-lakchelink}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
 
   redis:
     image: redis:alpine
