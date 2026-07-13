@@ -29,6 +29,8 @@ master.key
 
 # Ignore env files
 .env
+lakchelink-prod.env
+.lakchelink.env
 
 public/uploads
 public/packs*

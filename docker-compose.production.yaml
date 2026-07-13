@@ -61,6 +61,16 @@ services:
     ports:
       - '127.0.0.1:6379:6379'
 
+  adminer:
+    image: adminer:4
+    restart: always
+    depends_on:
+      - postgres
+    environment:
+      - ADMINER_DEFAULT_SERVER=postgres
+    ports:
+      - '127.0.0.1:8081:8080'
+
 volumes:
   storage_data:
   postgres_data:

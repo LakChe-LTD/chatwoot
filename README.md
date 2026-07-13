@@ -100,6 +100,10 @@ If you are looking for a stable version, please use the `master` or tags labelle
 
 ## Deployment
 
+### LakcheLink VPS runbook
+
+For the current LakcheLink deployment, local tunnel script, and database access steps, see [docs/lakchelink-vps-runbook.md](./docs/lakchelink-vps-runbook.md).
+
 ### Heroku one-click deploy
 
 Deploying Chatwoot to Heroku is a breeze. It's as simple as clicking this button:
