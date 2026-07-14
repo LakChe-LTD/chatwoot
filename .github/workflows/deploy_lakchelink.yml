@@ -29,12 +29,12 @@ permissions:
 
 jobs:
   deploy:
-    name: Deploy to ${{ github.event_name == 'workflow_dispatch' && inputs.target_environment || 'staging' }}
+    name: Deploy LakcheLink
     if: >-
       ${{
         github.event_name == 'workflow_dispatch' ||
-        (vars.DEPLOY_COMMIT_PREFIX != '' && startsWith(github.event.head_commit.message, vars.DEPLOY_COMMIT_PREFIX)) ||
-        (vars.DEPLOY_COMMIT_PREFIX == '' && startsWith(github.event.head_commit.message, '[deploy]'))
+        startsWith(github.event.head_commit.message, 'deploy:') ||
+        startsWith(github.event.head_commit.message, '[deploy]')
       }}
     runs-on: ubuntu-latest
     timeout-minutes: 45
@@ -43,7 +43,6 @@ jobs:
 
     env:
       DEPLOY_ENV: ${{ github.event_name == 'workflow_dispatch' && inputs.target_environment || 'staging' }}
-      DEPLOY_COMMIT_PREFIX: ${{ vars.DEPLOY_COMMIT_PREFIX || '[deploy]' }}
       VPS_HOST: ${{ secrets.VPS_HOST }}
       VPS_USER: ${{ secrets.VPS_USER || 'root' }}
       VPS_PORT: ${{ secrets.VPS_PORT || '22' }}
