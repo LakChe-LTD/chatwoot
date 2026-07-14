@@ -5,9 +5,22 @@ on:
     branches:
       - lakchelink-main
   workflow_dispatch:
+    inputs:
+      target_environment:
+        description: "Deployment target"
+        required: true
+        type: choice
+        default: production
+        options:
+          - staging
+          - production
+      git_ref:
+        description: "Git ref to deploy"
+        required: true
+        default: lakchelink-main
 
 concurrency:
-  group: deploy-lakchelink-main
+  group: deploy-lakchelink-${{ github.event_name == 'workflow_dispatch' && inputs.target_environment || 'staging' }}
   cancel-in-progress: true
 
 permissions:
@@ -15,20 +28,25 @@ permissions:
 
 jobs:
   deploy:
-    name: Deploy to production
+    name: Deploy to ${{ github.event_name == 'workflow_dispatch' && inputs.target_environment || 'staging' }}
     runs-on: ubuntu-latest
+    environment:
+      name: ${{ github.event_name == 'workflow_dispatch' && inputs.target_environment || 'staging' }}
 
     env:
       VPS_HOST: ${{ secrets.VPS_HOST }}
       VPS_USER: ${{ secrets.VPS_USER || 'root' }}
       VPS_PORT: ${{ secrets.VPS_PORT || '22' }}
       VPS_PASSWORD: ${{ secrets.VPS_PASSWORD }}
-      DEPLOY_PATH: /opt/lakchelink
-      COMPOSE_FILE: docker-compose.production.yaml
+      DEPLOY_PATH: ${{ secrets.DEPLOY_PATH || '/opt/lakchelink' }}
+      COMPOSE_FILE: ${{ secrets.COMPOSE_FILE || 'docker-compose.production.yaml' }}
+      HEALTHCHECK_URL: ${{ secrets.HEALTHCHECK_URL || 'http://127.0.0.1:3000/api' }}
 
     steps:
       - name: 1. Checkout source code
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.git_ref || github.ref }}
 
       - name: 2. Install deployment tools
         run: |
@@ -126,11 +144,12 @@ jobs:
             -p "$VPS_PORT" \
             -o StrictHostKeyChecking=no \
             -o UserKnownHostsFile=/dev/null \
-            "${VPS_USER}@${VPS_HOST}" <<'EOF'
+            "${VPS_USER}@${VPS_HOST}" \
+            "DEPLOY_PATH='$DEPLOY_PATH' COMPOSE_FILE='$COMPOSE_FILE' HEALTHCHECK_URL='$HEALTHCHECK_URL' bash -s" <<'EOF'
           set -e
 
           for attempt in $(seq 1 20); do
-            if curl -fsS http://127.0.0.1:3000/api >/dev/null; then
+            if curl -fsS "$HEALTHCHECK_URL" >/dev/null; then
               echo "LakcheLink is healthy"
               exit 0
             fi
@@ -140,8 +159,9 @@ jobs:
           done
 
           echo "Application failed its health check"
-          docker compose -f docker-compose.production.yaml ps
-          docker compose -f docker-compose.production.yaml logs --tail=100 rails
+          cd "$DEPLOY_PATH"
+          docker compose -f "$COMPOSE_FILE" ps
+          docker compose -f "$COMPOSE_FILE" logs --tail=100 rails
           exit 1
           EOF
 
