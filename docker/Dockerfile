@@ -87,8 +87,12 @@ RUN if [ "$RAILS_ENV" = "production" ]; then \
   && rm -rf spec node_modules tmp/cache; \
   fi
 
-# Generate .git_sha file without requiring a git checkout in the build context
-RUN if [ -d .git ]; then git rev-parse HEAD > /app/.git_sha; else printf '%s\n' "${GIT_SHA}" > /app/.git_sha; fi
+# Generate .git_sha file without requiring a usable git checkout in the build context
+RUN if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then \
+  git rev-parse HEAD > /app/.git_sha; \
+  else \
+  printf '%s\n' "${GIT_SHA:-unknown}" > /app/.git_sha; \
+  fi
 
 # Remove unnecessary files
 RUN rm -rf /gems/ruby/3.4.0/cache/*.gem \

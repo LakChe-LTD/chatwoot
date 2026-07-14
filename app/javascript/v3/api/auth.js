@@ -68,7 +68,8 @@ export const register = async creds => {
       password: creds.password,
       h_captcha_client_response: creds.hCaptchaClientResponse,
     });
-    return response.data;
+    setAuthCredentials(response);
+    return response;
   } catch (error) {
     throwErrorMessage(error);
   }

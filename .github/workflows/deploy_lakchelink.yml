@@ -15,21 +15,45 @@ permissions:
 
 jobs:
   deploy:
+    name: Deploy to production
     runs-on: ubuntu-latest
+
     env:
       VPS_HOST: ${{ secrets.VPS_HOST }}
       VPS_USER: ${{ secrets.VPS_USER || 'root' }}
       VPS_PORT: ${{ secrets.VPS_PORT || '22' }}
       VPS_PASSWORD: ${{ secrets.VPS_PASSWORD }}
       DEPLOY_PATH: /opt/lakchelink
+      COMPOSE_FILE: docker-compose.production.yaml
+
     steps:
-      - name: Checkout
+      - name: 1. Checkout source code
         uses: actions/checkout@v4
 
-      - name: Install rsync and sshpass
-        run: sudo apt-get update && sudo apt-get install -y rsync sshpass
+      - name: 2. Install deployment tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y rsync sshpass
 
-      - name: Sync source to VPS
+      - name: 3. Test VPS connection
+        run: |
+          sshpass -p "$VPS_PASSWORD" ssh \
+            -p "$VPS_PORT" \
+            -o StrictHostKeyChecking=no \
+            -o UserKnownHostsFile=/dev/null \
+            "${VPS_USER}@${VPS_HOST}" \
+            "echo 'VPS connection successful'"
+
+      - name: 4. Create deployment directory
+        run: |
+          sshpass -p "$VPS_PASSWORD" ssh \
+            -p "$VPS_PORT" \
+            -o StrictHostKeyChecking=no \
+            -o UserKnownHostsFile=/dev/null \
+            "${VPS_USER}@${VPS_HOST}" \
+            "mkdir -p '$DEPLOY_PATH'"
+
+      - name: 5. Sync source code to VPS
         run: |
           sshpass -p "$VPS_PASSWORD" rsync -az --delete \
             -e "ssh -p $VPS_PORT -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" \
@@ -42,15 +66,91 @@ jobs:
             --exclude '.env' \
             ./ "${VPS_USER}@${VPS_HOST}:${DEPLOY_PATH}/"
 
-      - name: Deploy on VPS
+      - name: 6. Validate Docker Compose configuration
         run: |
-          sshpass -p "$VPS_PASSWORD" ssh -p "$VPS_PORT" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+          sshpass -p "$VPS_PASSWORD" ssh \
+            -p "$VPS_PORT" \
+            -o StrictHostKeyChecking=no \
+            -o UserKnownHostsFile=/dev/null \
+            "${VPS_USER}@${VPS_HOST}" \
+            "cd '$DEPLOY_PATH' && docker compose -f '$COMPOSE_FILE' config --quiet"
+
+      - name: 7. Start PostgreSQL and Redis
+        run: |
+          sshpass -p "$VPS_PASSWORD" ssh \
+            -p "$VPS_PORT" \
+            -o StrictHostKeyChecking=no \
+            -o UserKnownHostsFile=/dev/null \
+            "${VPS_USER}@${VPS_HOST}" \
+            "cd '$DEPLOY_PATH' && docker compose -f '$COMPOSE_FILE' up -d postgres redis"
+
+      - name: 8. Build new application image
+        run: |
+          sshpass -p "$VPS_PASSWORD" ssh \
+            -p "$VPS_PORT" \
+            -o StrictHostKeyChecking=no \
+            -o UserKnownHostsFile=/dev/null \
+            "${VPS_USER}@${VPS_HOST}" \
+            "cd '$DEPLOY_PATH' && docker compose -f '$COMPOSE_FILE' build"
+
+      - name: 9. Prepare database
+        run: |
+          sshpass -p "$VPS_PASSWORD" ssh \
+            -p "$VPS_PORT" \
+            -o StrictHostKeyChecking=no \
+            -o UserKnownHostsFile=/dev/null \
+            "${VPS_USER}@${VPS_HOST}" \
+            "cd '$DEPLOY_PATH' && docker compose -f '$COMPOSE_FILE' run --rm rails bundle exec rails db:chatwoot_prepare"
+
+      - name: 10. Start new application containers
+        run: |
+          sshpass -p "$VPS_PASSWORD" ssh \
+            -p "$VPS_PORT" \
+            -o StrictHostKeyChecking=no \
+            -o UserKnownHostsFile=/dev/null \
+            "${VPS_USER}@${VPS_HOST}" \
+            "cd '$DEPLOY_PATH' && docker compose -f '$COMPOSE_FILE' up -d --no-build --remove-orphans"
+
+      - name: 11. Show container status
+        run: |
+          sshpass -p "$VPS_PASSWORD" ssh \
+            -p "$VPS_PORT" \
+            -o StrictHostKeyChecking=no \
+            -o UserKnownHostsFile=/dev/null \
+            "${VPS_USER}@${VPS_HOST}" \
+            "cd '$DEPLOY_PATH' && docker compose -f '$COMPOSE_FILE' ps"
+
+      - name: 12. Check application health
+        run: |
+          sshpass -p "$VPS_PASSWORD" ssh \
+            -p "$VPS_PORT" \
+            -o StrictHostKeyChecking=no \
+            -o UserKnownHostsFile=/dev/null \
             "${VPS_USER}@${VPS_HOST}" <<'EOF'
-          set -euo pipefail
-          cd /opt/lakchelink
-          docker compose -f docker-compose.production.yaml up -d postgres redis
-          docker compose -f docker-compose.production.yaml run --rm rails bundle exec rails db:chatwoot_prepare
-          docker compose -f docker-compose.production.yaml up -d --build --remove-orphans
+          set -e
+
+          for attempt in $(seq 1 20); do
+            if curl -fsS http://127.0.0.1:3000/api >/dev/null; then
+              echo "LakcheLink is healthy"
+              exit 0
+            fi
+
+            echo "Health check attempt ${attempt}/20 failed"
+            sleep 5
+          done
+
+          echo "Application failed its health check"
           docker compose -f docker-compose.production.yaml ps
-          curl -fsS http://127.0.0.1:3000/api >/dev/null
+          docker compose -f docker-compose.production.yaml logs --tail=100 rails
+          exit 1
           EOF
+
+      - name: 13. Clean unused Docker images
+        if: success()
+        run: |
+          sshpass -p "$VPS_PASSWORD" ssh \
+            -p "$VPS_PORT" \
+            -o StrictHostKeyChecking=no \
+            -o UserKnownHostsFile=/dev/null \
+            "${VPS_USER}@${VPS_HOST}" \
+            "docker image prune -f"

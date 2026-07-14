@@ -19,23 +19,23 @@
   display_title: 'Installation Name'
   description: 'The installation wide name that would be used in the dashboard, title etc.'
 - name: LOGO_THUMBNAIL
-  value: '/brand-assets/lakche-favicon.png'
+  value: '/brand-assets/lakche-favicon.png?v=20260713-2'
   display_title: 'Logo Thumbnail'
   description: 'The thumbnail that would be used for favicon (512px X 512px)'
 - name: LOGO
-  value: '/brand-assets/lakche-logo-light.png'
+  value: '/brand-assets/lakche-logo.png?v=20260713-2'
   display_title: 'Logo'
   description: 'The logo that would be used on the dashboard, login page etc.'
 - name: LOGO_DARK
-  value: '/brand-assets/lakche-logo-dark.png'
+  value: '/brand-assets/lakche-logo-dark.png?v=20260713-3'
   display_title: 'Logo Dark Mode'
   description: 'The logo that would be used on the dashboard, login page etc. for dark mode'
 - name: BRAND_URL
-  value: 'https://lakche.com'
+  value: 'https://lakchelink.com'
   display_title: 'Brand URL'
   description: 'The URL that would be used in emails under the section “Powered By”'
 - name: WIDGET_BRAND_URL
-  value: 'https://lakche.com'
+  value: 'https://lakchelink.com'
   display_title: 'Widget Brand URL'
   description: 'The URL that would be used in the widget under the section “Powered By”'
 - name: BRAND_NAME
@@ -60,7 +60,7 @@
 # ------- Signup & Account Related Config ------- #
 - name: ENABLE_ACCOUNT_SIGNUP
   display_title: 'Enable Account Signup'
-  value: false
+  value: true
   description: 'Allow users to signup for new accounts'
   locked: false
   type: boolean

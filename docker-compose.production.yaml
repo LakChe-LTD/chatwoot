@@ -42,6 +42,7 @@ services:
   postgres:
     image: pgvector/pgvector:pg16
     restart: always
+    env_file: .env
     ports:
       - '127.0.0.1:5432:5432'
     volumes:
@@ -49,12 +50,12 @@ services:
     environment:
       - POSTGRES_DB=${POSTGRES_DATABASE:-lakchelink_production}
       - POSTGRES_USER=${POSTGRES_USERNAME:-lakchelink}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
 
   redis:
     image: redis:alpine
     restart: always
-    command: ["sh", "-c", "redis-server --requirepass \"$REDIS_PASSWORD\""]
+    command: ["sh", "-c", "redis-server --requirepass \"$$REDIS_PASSWORD\""]
     env_file: .env
     volumes:
       - redis_data:/data
@@ -68,6 +69,9 @@ services:
       - postgres
     environment:
       - ADMINER_DEFAULT_SERVER=postgres
+    volumes:
+      - ./docker/adminer/adminer.css:/var/www/html/adminer.css:ro
+      - ./public/brand-assets/lakche-logo.png:/var/www/html/lakche-logo.png:ro
     ports:
       - '127.0.0.1:8081:8080'
 

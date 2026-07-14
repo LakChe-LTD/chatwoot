@@ -31,6 +31,8 @@ master.key
 .env
 lakchelink-prod.env
 .lakchelink.env
+Lakche dark mode logo.png
+lakche white bg logo.png
 
 public/uploads
 public/packs*

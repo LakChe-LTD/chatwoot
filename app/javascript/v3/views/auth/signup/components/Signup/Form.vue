@@ -4,22 +4,20 @@ import { useVuelidate } from '@vuelidate/core';
 import { required, minLength, email } from '@vuelidate/validators';
 import { useStore } from 'vuex';
 import { useI18n } from 'vue-i18n';
-import { useRouter } from 'vue-router';
 import { useAlert } from 'dashboard/composables';
 import VueHcaptcha from '@hcaptcha/vue3-hcaptcha';
+import { getLoginRedirectURL } from 'v3/helpers/AuthHelper';
 import FormInput from '../../../../../components/Form/Input.vue';
 import NextButton from 'dashboard/components-next/button/Button.vue';
 import PasswordRequirements from './PasswordRequirements.vue';
 import { isValidPassword } from 'shared/helpers/Validators';
 import GoogleOAuthButton from '../../../../../components/GoogleOauth/Button.vue';
 import { register } from '../../../../../api/auth';
-import * as CompanyEmailValidator from 'company-email-validator';
 
 const MIN_PASSWORD_LENGTH = 6;
 
 const store = useStore();
 const { t } = useI18n();
-const router = useRouter();
 
 const hCaptcha = ref(null);
 const isPasswordFocused = ref(false);
@@ -36,9 +34,6 @@ const rules = {
     email: {
       required,
       email,
-      businessEmailValidator(value) {
-        return CompanyEmailValidator.isCompanyEmail(value);
-      },
     },
     password: {
       required,
@@ -76,10 +71,9 @@ const isFormValid = computed(() => !v$.value.$invalid);
 const performRegistration = async () => {
   isSignupInProgress.value = true;
   try {
-    await register(credentials);
-    router.push({
-      name: 'auth_verify_email',
-      state: { email: credentials.email },
+    const response = await register(credentials);
+    window.location = getLoginRedirectURL({
+      user: response.data.data,
     });
   } catch (error) {
     const errorMessage = error?.message || t('REGISTER.API.ERROR_MESSAGE');

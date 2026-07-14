@@ -18,6 +18,7 @@ class Api::V2::AccountsController < Api::BaseController
       email: account_params[:email],
       user_password: account_params[:password],
       locale: account_params[:locale],
+      confirmed: true,
       user: current_user
     ).perform
 

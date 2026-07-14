@@ -1,0 +1,17 @@
+#menu h1 {
+  margin: 0 0 1rem;
+}
+
+#menu h1 a#h1 {
+  display: block;
+  width: 170px;
+  height: 56px;
+  background: url('/lakche-logo.png') no-repeat center center;
+  background-size: contain;
+  text-indent: -9999px;
+  overflow: hidden;
+}
+
+#menu h1 .version {
+  display: none;
+}

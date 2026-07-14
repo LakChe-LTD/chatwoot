@@ -28,22 +28,13 @@ class Api::V1::AccountsController < Api::BaseController
       email: account_params[:email],
       user_password: account_params[:password],
       locale: account_params[:locale],
+      confirmed: true,
       user: current_user
     ).perform
     enqueue_branding_enrichment
     if @user
-      # Authenticated users (dashboard "add account") and api_only signups
-      # need the full response with account_id. API-only deployments have no
-      # frontend to handle the email confirmation flow, so they need auth
-      # tokens to proceed.
-      # Unauthenticated web signup returns only the email — no session is
-      # created until the user confirms via the email link.
-      if current_user || api_only_signup?
-        send_auth_headers(@user)
-        render 'api/v1/accounts/create', format: :json, locals: { resource: @user }
-      else
-        render json: { email: @user.email }
-      end
+      send_auth_headers(@user)
+      render 'api/v1/accounts/create', format: :json, locals: { resource: @user }
     else
       render_error_response(CustomExceptions::Account::SignupFailed.new({}))
     end
@@ -123,15 +114,6 @@ class Api::V1::AccountsController < Api::BaseController
 
   def check_signup_enabled
     raise ActionController::RoutingError, 'Not Found' unless GlobalConfigService.account_signup_enabled?
-  end
-
-  def api_only_signup?
-    # CW_API_ONLY_SERVER is the canonical flag for API-only deployments.
-    # ENABLE_ACCOUNT_SIGNUP='api_only' is a legacy sentinel for the same purpose.
-    # Read ENABLE_ACCOUNT_SIGNUP raw from InstallationConfig because GlobalConfig.get
-    # typecasts it to boolean, coercing 'api_only' to true.
-    ActiveModel::Type::Boolean.new.cast(ENV.fetch('CW_API_ONLY_SERVER', false)) ||
-      InstallationConfig.find_by(name: 'ENABLE_ACCOUNT_SIGNUP')&.value.to_s == 'api_only'
   end
 
   def validate_captcha
