@@ -25,19 +25,24 @@ concurrency:
 
 permissions:
   contents: read
+  packages: write
 
 jobs:
   deploy:
     name: Deploy to ${{ github.event_name == 'workflow_dispatch' && inputs.target_environment || 'staging' }}
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     environment:
       name: ${{ github.event_name == 'workflow_dispatch' && inputs.target_environment || 'staging' }}
 
     env:
+      DEPLOY_ENV: ${{ github.event_name == 'workflow_dispatch' && inputs.target_environment || 'staging' }}
       VPS_HOST: ${{ secrets.VPS_HOST }}
       VPS_USER: ${{ secrets.VPS_USER || 'root' }}
       VPS_PORT: ${{ secrets.VPS_PORT || '22' }}
       VPS_PASSWORD: ${{ secrets.VPS_PASSWORD }}
+      GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}
+      GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
       DEPLOY_PATH: ${{ secrets.DEPLOY_PATH || '/opt/lakchelink' }}
       COMPOSE_FILE: ${{ secrets.COMPOSE_FILE || 'docker-compose.production.yaml' }}
       HEALTHCHECK_URL: ${{ secrets.HEALTHCHECK_URL || 'http://127.0.0.1:3000/api' }}
@@ -48,35 +53,75 @@ jobs:
         with:
           ref: ${{ github.event_name == 'workflow_dispatch' && inputs.git_ref || github.ref }}
 
-      - name: 2. Install deployment tools
+      - name: 2. Compute image metadata
+        run: |
+          IMAGE_REPO="$(printf '%s' "ghcr.io/${GITHUB_REPOSITORY_OWNER}/lakchelink-chatwoot" | tr '[:upper:]' '[:lower:]')"
+          IMAGE_TAG="${IMAGE_REPO}:${GITHUB_SHA}"
+          IMAGE_TAG_ENV="${IMAGE_REPO}:${DEPLOY_ENV}-latest"
+
+          {
+            echo "IMAGE_REPO=$IMAGE_REPO"
+            echo "IMAGE_TAG=$IMAGE_TAG"
+            echo "IMAGE_TAG_ENV=$IMAGE_TAG_ENV"
+          } >> "$GITHUB_ENV"
+
+      - name: 3. Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: 4. Log in to GHCR for image push
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 5. Build and push application image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/Dockerfile
+          push: true
+          tags: |
+            ${{ env.IMAGE_TAG }}
+            ${{ env.IMAGE_TAG_ENV }}
+          build-args: |
+            GIT_SHA=${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: 6. Install deployment tools
         run: |
           sudo apt-get update
           sudo apt-get install -y rsync sshpass
 
-      - name: 3. Test VPS connection
+      - name: 7. Test VPS connection
         run: |
           sshpass -p "$VPS_PASSWORD" ssh \
             -p "$VPS_PORT" \
             -o StrictHostKeyChecking=no \
             -o UserKnownHostsFile=/dev/null \
+            -o ServerAliveInterval=30 \
+            -o ServerAliveCountMax=10 \
             "${VPS_USER}@${VPS_HOST}" \
             "echo 'VPS connection successful'"
 
-      - name: 4. Create deployment directory
+      - name: 8. Create deployment directory
         run: |
           sshpass -p "$VPS_PASSWORD" ssh \
             -p "$VPS_PORT" \
             -o StrictHostKeyChecking=no \
             -o UserKnownHostsFile=/dev/null \
+            -o ServerAliveInterval=30 \
+            -o ServerAliveCountMax=10 \
             "${VPS_USER}@${VPS_HOST}" \
             "mkdir -p '$DEPLOY_PATH'"
 
-      - name: 5. Sync source code to VPS
+      - name: 9. Sync deployment files to VPS
         run: |
           sshpass -p "$VPS_PASSWORD" rsync -az --delete \
-            -e "ssh -p $VPS_PORT -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" \
+            -e "ssh -p $VPS_PORT -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ServerAliveInterval=30 -o ServerAliveCountMax=10" \
             --exclude '.git' \
-            --exclude '.github/workflows/deploy_lakchelink.yml' \
+            --exclude '.github' \
             --exclude 'node_modules' \
             --exclude 'log' \
             --exclude 'tmp' \
@@ -84,68 +129,94 @@ jobs:
             --exclude '.env' \
             ./ "${VPS_USER}@${VPS_HOST}:${DEPLOY_PATH}/"
 
-      - name: 6. Validate Docker Compose configuration
+      - name: 10. Log in to GHCR on VPS
         run: |
+          GHCR_TOKEN_B64="$(printf '%s' "$GHCR_TOKEN" | base64 | tr -d '\n')"
           sshpass -p "$VPS_PASSWORD" ssh \
             -p "$VPS_PORT" \
             -o StrictHostKeyChecking=no \
             -o UserKnownHostsFile=/dev/null \
+            -o ServerAliveInterval=30 \
+            -o ServerAliveCountMax=10 \
             "${VPS_USER}@${VPS_HOST}" \
-            "cd '$DEPLOY_PATH' && docker compose -f '$COMPOSE_FILE' config --quiet"
+            "printf '%s' '$GHCR_TOKEN_B64' | base64 -d | docker login ghcr.io -u '$GHCR_USERNAME' --password-stdin"
 
-      - name: 7. Start PostgreSQL and Redis
+      - name: 11. Validate Docker Compose configuration
         run: |
           sshpass -p "$VPS_PASSWORD" ssh \
             -p "$VPS_PORT" \
             -o StrictHostKeyChecking=no \
             -o UserKnownHostsFile=/dev/null \
+            -o ServerAliveInterval=30 \
+            -o ServerAliveCountMax=10 \
             "${VPS_USER}@${VPS_HOST}" \
-            "cd '$DEPLOY_PATH' && docker compose -f '$COMPOSE_FILE' up -d postgres redis"
+            "cd '$DEPLOY_PATH' && export CHATWOOT_IMAGE='$IMAGE_TAG' && docker compose -f '$COMPOSE_FILE' config --quiet"
 
-      - name: 8. Build new application image
+      - name: 12. Start data services
         run: |
           sshpass -p "$VPS_PASSWORD" ssh \
             -p "$VPS_PORT" \
             -o StrictHostKeyChecking=no \
             -o UserKnownHostsFile=/dev/null \
+            -o ServerAliveInterval=30 \
+            -o ServerAliveCountMax=10 \
             "${VPS_USER}@${VPS_HOST}" \
-            "cd '$DEPLOY_PATH' && docker compose -f '$COMPOSE_FILE' build"
+            "cd '$DEPLOY_PATH' && docker compose -f '$COMPOSE_FILE' up -d postgres redis adminer"
 
-      - name: 9. Prepare database
+      - name: 13. Pull new application image
         run: |
           sshpass -p "$VPS_PASSWORD" ssh \
             -p "$VPS_PORT" \
             -o StrictHostKeyChecking=no \
             -o UserKnownHostsFile=/dev/null \
+            -o ServerAliveInterval=30 \
+            -o ServerAliveCountMax=10 \
             "${VPS_USER}@${VPS_HOST}" \
-            "cd '$DEPLOY_PATH' && docker compose -f '$COMPOSE_FILE' run --rm rails bundle exec rails db:chatwoot_prepare"
+            "cd '$DEPLOY_PATH' && export CHATWOOT_IMAGE='$IMAGE_TAG' && docker compose -f '$COMPOSE_FILE' pull rails sidekiq"
 
-      - name: 10. Start new application containers
+      - name: 14. Prepare database
         run: |
           sshpass -p "$VPS_PASSWORD" ssh \
             -p "$VPS_PORT" \
             -o StrictHostKeyChecking=no \
             -o UserKnownHostsFile=/dev/null \
+            -o ServerAliveInterval=30 \
+            -o ServerAliveCountMax=10 \
             "${VPS_USER}@${VPS_HOST}" \
-            "cd '$DEPLOY_PATH' && docker compose -f '$COMPOSE_FILE' up -d --no-build --remove-orphans"
+            "cd '$DEPLOY_PATH' && export CHATWOOT_IMAGE='$IMAGE_TAG' && docker compose -f '$COMPOSE_FILE' run --rm rails bundle exec rails db:chatwoot_prepare"
 
-      - name: 11. Show container status
+      - name: 15. Start new application containers
         run: |
           sshpass -p "$VPS_PASSWORD" ssh \
             -p "$VPS_PORT" \
             -o StrictHostKeyChecking=no \
             -o UserKnownHostsFile=/dev/null \
+            -o ServerAliveInterval=30 \
+            -o ServerAliveCountMax=10 \
             "${VPS_USER}@${VPS_HOST}" \
-            "cd '$DEPLOY_PATH' && docker compose -f '$COMPOSE_FILE' ps"
+            "cd '$DEPLOY_PATH' && export CHATWOOT_IMAGE='$IMAGE_TAG' && docker compose -f '$COMPOSE_FILE' up -d --no-deps --remove-orphans rails sidekiq"
 
-      - name: 12. Check application health
+      - name: 16. Show container status
         run: |
           sshpass -p "$VPS_PASSWORD" ssh \
             -p "$VPS_PORT" \
             -o StrictHostKeyChecking=no \
             -o UserKnownHostsFile=/dev/null \
+            -o ServerAliveInterval=30 \
+            -o ServerAliveCountMax=10 \
             "${VPS_USER}@${VPS_HOST}" \
-            "DEPLOY_PATH='$DEPLOY_PATH' COMPOSE_FILE='$COMPOSE_FILE' HEALTHCHECK_URL='$HEALTHCHECK_URL' bash -s" <<'EOF'
+            "cd '$DEPLOY_PATH' && export CHATWOOT_IMAGE='$IMAGE_TAG' && docker compose -f '$COMPOSE_FILE' ps"
+
+      - name: 17. Check application health
+        run: |
+          sshpass -p "$VPS_PASSWORD" ssh \
+            -p "$VPS_PORT" \
+            -o StrictHostKeyChecking=no \
+            -o UserKnownHostsFile=/dev/null \
+            -o ServerAliveInterval=30 \
+            -o ServerAliveCountMax=10 \
+            "${VPS_USER}@${VPS_HOST}" \
+            "DEPLOY_PATH='$DEPLOY_PATH' COMPOSE_FILE='$COMPOSE_FILE' HEALTHCHECK_URL='$HEALTHCHECK_URL' IMAGE_TAG='$IMAGE_TAG' bash -s" <<'EOF'
           set -e
 
           for attempt in $(seq 1 20); do
@@ -160,19 +231,19 @@ jobs:
 
           echo "Application failed its health check"
           cd "$DEPLOY_PATH"
-          docker compose -f "$COMPOSE_FILE" ps
-          docker compose -f "$COMPOSE_FILE" logs --tail=100 rails
+          CHATWOOT_IMAGE="$IMAGE_TAG" docker compose -f "$COMPOSE_FILE" ps
+          CHATWOOT_IMAGE="$IMAGE_TAG" docker compose -f "$COMPOSE_FILE" logs --tail=100 rails
           exit 1
           EOF
 
-      - name: 13. Clean unused Docker images
+      - name: 18. Clean unused Docker images
         if: success()
         run: |
           sshpass -p "$VPS_PASSWORD" ssh \
             -p "$VPS_PORT" \
             -o StrictHostKeyChecking=no \
             -o UserKnownHostsFile=/dev/null \
+            -o ServerAliveInterval=30 \
+            -o ServerAliveCountMax=10 \
             "${VPS_USER}@${VPS_HOST}" \
             "docker image prune -f"
-
-
