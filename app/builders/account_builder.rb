@@ -2,7 +2,8 @@
 
 class AccountBuilder
   include CustomExceptions::Account
-  pattr_initialize [:account_name, :email!, :confirmed, :user, :user_full_name, :user_password, :super_admin, :locale]
+  pattr_initialize [:account_name, :email!, :confirmed, :user, :user_full_name, :user_password, :super_admin,
+                    :locale, :skip_email_domain_validation]
 
   def perform
     if @user.nil?
@@ -32,7 +33,10 @@ class AccountBuilder
   end
 
   def validate_email
-    Account::SignUpEmailValidationService.new(@email).perform
+    Account::SignUpEmailValidationService.new(
+      @email,
+      skip_domain_validation: !!@skip_email_domain_validation
+    ).perform
   end
 
   def validate_user
@@ -75,7 +79,7 @@ class AccountBuilder
                      password_confirmation: user_password,
                      name: user_full_name)
     @user.type = 'SuperAdmin' if @super_admin
-    @user.confirm if @confirmed
+    @user.skip_confirmation! if @confirmed
     @user.save!
   end
 end

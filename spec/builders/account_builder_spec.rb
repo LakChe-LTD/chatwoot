@@ -20,7 +20,10 @@ RSpec.describe AccountBuilder do
 
   # Mock the email validation service
   before do
-    allow(Account::SignUpEmailValidationService).to receive(:new).with(email).and_return(validation_service)
+    allow(Account::SignUpEmailValidationService)
+      .to receive(:new)
+      .with(email, skip_domain_validation: false)
+      .and_return(validation_service)
   end
 
   describe '#perform' do

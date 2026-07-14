@@ -2,10 +2,11 @@
 
 class Account::SignUpEmailValidationService
   include CustomExceptions::Account
-  attr_reader :email
+  attr_reader :email, :skip_domain_validation
 
-  def initialize(email)
+  def initialize(email, skip_domain_validation: false)
     @email = email
+    @skip_domain_validation = skip_domain_validation
   end
 
   def perform
@@ -23,6 +24,8 @@ class Account::SignUpEmailValidationService
   private
 
   def domain_blocked?
+    return false if skip_domain_validation
+
     domain = email.split('@').last&.downcase
     blocked_domains.any? { |blocked_domain| domain.match?(blocked_domain.downcase) }
   end

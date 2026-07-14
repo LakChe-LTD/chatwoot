@@ -50,6 +50,16 @@ RSpec.describe Account::SignUpEmailValidationService, type: :service do
       end
     end
 
+    context 'when domain is blocked but domain validation is skipped' do
+      let(:email) { 'test@gmail.com' }
+      let(:service) { described_class.new(email, skip_domain_validation: true) }
+
+      it 'allows signup' do
+        allow(ValidEmail2::Address).to receive(:new).with(email).and_return(valid_email_address)
+        expect(service.perform).to be(true)
+      end
+    end
+
     context 'when email is from disposable provider' do
       let(:email) { 'test@mailinator.com' }
 
