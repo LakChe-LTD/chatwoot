@@ -202,7 +202,18 @@ jobs:
             "${VPS_USER}@${VPS_HOST}" \
             "cd '$DEPLOY_PATH' && export CHATWOOT_IMAGE='$IMAGE_TAG' && docker compose -f '$COMPOSE_FILE' up -d --no-deps --remove-orphans rails sidekiq"
 
-      - name: 16. Show container status
+      - name: 16. Reapply LakcheLink branding config
+        run: |
+          sshpass -p "$VPS_PASSWORD" ssh \
+            -p "$VPS_PORT" \
+            -o StrictHostKeyChecking=no \
+            -o UserKnownHostsFile=/dev/null \
+            -o ServerAliveInterval=30 \
+            -o ServerAliveCountMax=10 \
+            "${VPS_USER}@${VPS_HOST}" \
+            "cd '$DEPLOY_PATH' && export CHATWOOT_IMAGE='$IMAGE_TAG' && docker compose -f '$COMPOSE_FILE' exec -T rails bundle exec rails runner scripts/apply_lakchelink_branding.rb"
+
+      - name: 17. Show container status
         run: |
           sshpass -p "$VPS_PASSWORD" ssh \
             -p "$VPS_PORT" \
@@ -213,7 +224,7 @@ jobs:
             "${VPS_USER}@${VPS_HOST}" \
             "cd '$DEPLOY_PATH' && export CHATWOOT_IMAGE='$IMAGE_TAG' && docker compose -f '$COMPOSE_FILE' ps"
 
-      - name: 17. Check application health
+      - name: 18. Check application health
         run: |
           sshpass -p "$VPS_PASSWORD" ssh \
             -p "$VPS_PORT" \
@@ -242,7 +253,7 @@ jobs:
           exit 1
           EOF
 
-      - name: 18. Clean unused Docker images
+      - name: 19. Clean unused Docker images
         if: success()
         run: |
           sshpass -p "$VPS_PASSWORD" ssh \
