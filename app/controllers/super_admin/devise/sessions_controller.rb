@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 class SuperAdmin::Devise::SessionsController < Devise::SessionsController
+  before_action :set_global_config, only: [:new]
+
   def new
     self.resource = resource_class.new(sign_in_params)
   end
@@ -20,6 +22,10 @@ class SuperAdmin::Devise::SessionsController < Devise::SessionsController
   end
 
   private
+
+  def set_global_config
+    @global_config = GlobalConfig.get('LOGO', 'LOGO_DARK', 'INSTALLATION_NAME')
+  end
 
   def valid_credentials?
     @super_admin = SuperAdmin.find_by!(email: params[:super_admin][:email])

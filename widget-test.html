@@ -3,35 +3,24 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Chatwoot Widget Test</title>
+    <title>LakcheLink Widget Test</title>
   </head>
   <body>
-    <main>
-      <h1>Chatwoot Widget Test Page</h1>
-      <p>If Chatwoot is running, the chat bubble should appear in the bottom-right corner.</p>
-    </main>
+    <h1>LakcheLink Widget Test</h1>
+    <p>Open this page in the browser and the staging widget should appear on the right.</p>
 
     <script>
-      window.chatwootSettings = {
-        position: 'right',
-        type: 'standard',
-        launcherTitle: '',
-      };
-
+      window.chatwootSettings = { position: 'right', type: 'standard', launcherTitle: '' };
       (function (d, t) {
-        var BASE_URL = 'http://localhost:3000';
-        var SDK_URL = 'http://localhost:3036';
-        var g = d.createElement(t);
-        var s = d.getElementsByTagName(t)[0];
-
-        g.src = SDK_URL + '/vite-dev/entrypoints/sdk.js';
-        g.type = 'module';
+        var BASE_URL = 'https://staging.lakchelink.com';
+        var g = d.createElement(t),
+          s = d.getElementsByTagName(t)[0];
+        g.src = BASE_URL + '/packs/js/sdk.js';
         g.async = true;
         s.parentNode.insertBefore(g, s);
-
         g.onload = function () {
           window.chatwootSDK.run({
-            websiteToken: 'rCWB5tttxCw5QtoQFXKwj4Sg',
+            websiteToken: 'DonMznMkE5hQ9Ffv5HnGhoDm',
             baseUrl: BASE_URL,
           });
         };

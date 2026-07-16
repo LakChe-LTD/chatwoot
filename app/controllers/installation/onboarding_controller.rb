@@ -1,5 +1,6 @@
 class Installation::OnboardingController < ApplicationController
   before_action :ensure_installation_onboarding
+  before_action :set_global_config, only: [:index]
 
   def index; end
 
@@ -39,5 +40,9 @@ class Installation::OnboardingController < ApplicationController
 
   def ensure_installation_onboarding
     redirect_to '/' unless ::Redis::Alfred.get(::Redis::Alfred::CHATWOOT_INSTALLATION_ONBOARDING)
+  end
+
+  def set_global_config
+    @global_config = GlobalConfig.get('LOGO', 'LOGO_DARK', 'INSTALLATION_NAME')
   end
 end
