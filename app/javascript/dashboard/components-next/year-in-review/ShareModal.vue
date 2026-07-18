@@ -95,7 +95,7 @@ const generateImage = async () => {
     );
 
     const logo = new Image();
-    logo.src = '/brand-assets/lakche-logo.png';
+    logo.src = '/brand-assets/logo.png?v=20260717-1';
     await new Promise(resolve => {
       logo.onload = resolve;
     });

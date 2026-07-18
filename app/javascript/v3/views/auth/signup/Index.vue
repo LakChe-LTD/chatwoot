@@ -1,21 +1,17 @@
 <script setup>
 import { computed } from 'vue';
-import { useStore } from 'vuex';
 import { useI18n } from 'vue-i18n';
 import SignupForm from './components/Signup/Form.vue';
 import Testimonials from './components/Testimonials/Index.vue';
 import signupBg from 'assets/images/auth/signup-bg.jpg';
 
-const store = useStore();
 const { t } = useI18n();
-
-const globalConfig = computed(() => store.getters['globalConfig/get']);
-const installationName = computed(
-  () => globalConfig.value.installationName || 'LakcheLink'
-);
+const installationName = computed(() => 'LakcheLink');
 const signupHeading = computed(() =>
   t('REGISTER.GET_STARTED', { installationName: installationName.value })
 );
+const brandLogo = '/brand-assets/logo.png?v=20260717-1';
+const brandLogoDark = '/brand-assets/logo_dark.png?v=20260717-1';
 </script>
 
 <template>
@@ -33,14 +29,13 @@ const signupHeading = computed(() =>
         <div class="max-w-[420px] w-full">
           <div class="mb-6">
             <img
-              :src="globalConfig.logo"
-              :alt="globalConfig.installationName"
+              :src="brandLogo"
+              alt="LakcheLink"
               class="block w-auto h-7 dark:hidden"
             />
             <img
-              v-if="globalConfig.logoDark"
-              :src="globalConfig.logoDark"
-              :alt="globalConfig.installationName"
+              :src="brandLogoDark"
+              alt="LakcheLink"
               class="hidden w-auto h-7 dark:block"
             />
             <h2 class="mt-6 text-2xl font-semibold text-n-slate-12">

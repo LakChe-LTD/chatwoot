@@ -1,9 +1,7 @@
 <script>
-const {
-  LOGO_THUMBNAIL: logoThumbnail,
-  BRAND_NAME: brandName,
-  WIDGET_BRAND_URL: widgetBrandURL,
-} = window.globalConfig || {};
+const BRAND_NAME = 'LAKCHE LLC';
+const BRAND_LOGO_THUMBNAIL = '/brand-assets/logo_thumbnail.png?v=20260718-1';
+const BRAND_REDIRECT_URL = 'https://lakchelink.com';
 
 export default {
   props: {
@@ -15,9 +13,9 @@ export default {
   data() {
     return {
       globalConfig: {
-        brandName,
-        logoThumbnail,
-        widgetBrandURL,
+        brandName: BRAND_NAME,
+        logoThumbnail: BRAND_LOGO_THUMBNAIL,
+        widgetBrandURL: BRAND_REDIRECT_URL,
       },
     };
   },

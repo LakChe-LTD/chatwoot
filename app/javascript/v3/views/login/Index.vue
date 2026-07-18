@@ -7,7 +7,6 @@ import { required, email } from '@vuelidate/validators';
 import { useVuelidate } from '@vuelidate/core';
 import { SESSION_STORAGE_KEYS } from 'dashboard/constants/sessionStorage';
 import SessionStorage from 'shared/helpers/sessionStorage';
-import { useBranding } from 'shared/composables/useBranding';
 import AnalyticsHelper from 'dashboard/helper/AnalyticsHelper';
 import { SESSION_EVENTS } from 'dashboard/helper/AnalyticsHelper/events';
 
@@ -50,11 +49,7 @@ export default {
     authError: { type: String, default: '' },
   },
   setup() {
-    const { replaceInstallationName } = useBranding();
-    return {
-      replaceInstallationName,
-      v$: useVuelidate(),
-    };
+    return { v$: useVuelidate() };
   },
   data() {
     return {
@@ -91,6 +86,15 @@ export default {
   },
   computed: {
     ...mapGetters({ globalConfig: 'globalConfig/get' }),
+    brandLogo() {
+      return '/brand-assets/logo.png?v=20260717-1';
+    },
+    brandLogoDark() {
+      return '/brand-assets/logo_dark.png?v=20260717-1';
+    },
+    brandTitle() {
+      return 'Login to LakcheLink';
+    },
     allowedLoginMethods() {
       return window.chatwootConfig.allowedLoginMethods || ['email'];
     },
@@ -294,18 +298,17 @@ export default {
   >
     <section class="max-w-5xl mx-auto">
       <img
-        :src="globalConfig.logo"
-        :alt="globalConfig.installationName"
+        :src="brandLogo"
+        alt="LakcheLink"
         class="block w-auto h-8 mx-auto dark:hidden"
       />
       <img
-        v-if="globalConfig.logoDark"
-        :src="globalConfig.logoDark"
-        :alt="globalConfig.installationName"
+        :src="brandLogoDark"
+        alt="LakcheLink"
         class="hidden w-auto h-8 mx-auto dark:block"
       />
       <h2 class="mt-6 text-3xl font-medium text-center text-n-slate-12">
-        {{ replaceInstallationName($t('LOGIN.TITLE')) }}
+        {{ brandTitle }}
       </h2>
       <p v-if="showSignupLink" class="mt-3 text-sm text-center text-n-slate-11">
         {{ $t('COMMON.OR') }}

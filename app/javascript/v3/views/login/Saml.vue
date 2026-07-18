@@ -1,6 +1,5 @@
 <script setup>
-import { ref, nextTick, computed, onMounted } from 'vue';
-import { useStore } from 'vuex';
+import { ref, nextTick, onMounted } from 'vue';
 import { required, email } from '@vuelidate/validators';
 import { useVuelidate } from '@vuelidate/core';
 import { useI18n } from 'vue-i18n';
@@ -21,7 +20,6 @@ const props = defineProps({
   },
 });
 
-const store = useStore();
 const { t } = useI18n();
 
 const credentials = ref({
@@ -54,8 +52,9 @@ const validations = {
 
 const v$ = useVuelidate(validations, { credentials });
 
-const globalConfig = computed(() => store.getters['globalConfig/get']);
 const csrfToken = ref('');
+const brandLogo = '/brand-assets/logo.png?v=20260717-1';
+const brandLogoDark = '/brand-assets/logo_dark.png?v=20260717-1';
 
 onMounted(async () => {
   csrfToken.value =
@@ -73,14 +72,13 @@ onMounted(async () => {
   >
     <section class="max-w-5xl mx-auto">
       <img
-        :src="globalConfig.logo"
-        :alt="globalConfig.installationName"
+        :src="brandLogo"
+        alt="LakcheLink"
         class="block w-auto h-8 mx-auto dark:hidden"
       />
       <img
-        v-if="globalConfig.logoDark"
-        :src="globalConfig.logoDark"
-        :alt="globalConfig.installationName"
+        :src="brandLogoDark"
+        alt="LakcheLink"
         class="hidden w-auto h-8 mx-auto dark:block"
       />
       <h2 class="mt-6 text-3xl font-medium text-center text-n-slate-12">

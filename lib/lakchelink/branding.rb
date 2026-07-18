@@ -1,13 +1,15 @@
 module Lakchelink
   module Branding
     DESIRED_CONFIG = {
-      'LOGO' => '/brand-assets/lakche-logo.png?v=20260713-2',
-      'LOGO_DARK' => '/brand-assets/lakche-logo-dark.png?v=20260713-3',
-      'LOGO_THUMBNAIL' => '/brand-assets/lakche-favicon.png?v=20260713-2',
+      'LOGO' => '/brand-assets/logo.png?v=20260718-1',
+      'LOGO_DARK' => '/brand-assets/logo_dark.png?v=20260718-1',
+      'LOGO_THUMBNAIL' => '/brand-assets/logo_thumbnail.png?v=20260718-1',
       'INSTALLATION_NAME' => 'LakcheLink',
       'BRAND_NAME' => 'LAKCHE LLC',
-      'BRAND_URL' => 'https://lakche.com',
-      'WIDGET_BRAND_URL' => 'https://lakche.com'
+      'BRAND_URL' => 'https://lakchelink.com',
+      'WIDGET_BRAND_URL' => 'https://lakchelink.com',
+      'TERMS_URL' => 'https://lakchelink.com',
+      'PRIVACY_URL' => 'https://lakchelink.com'
     }.freeze
 
     module_function
