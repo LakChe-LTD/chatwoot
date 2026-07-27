@@ -1,7 +1,7 @@
 class ApplicationMailer < ActionMailer::Base
   include ActionView::Helpers::SanitizeHelper
 
-  default from: ENV.fetch('MAILER_SENDER_EMAIL', 'Chatwoot <accounts@chatwoot.com>')
+  default from: ENV.fetch('MAILER_SENDER_EMAIL', 'LakcheLink <no_reply@lakchelink.com>')
   before_action { ensure_current_account(params.try(:[], :account)) }
   around_action :switch_locale
   layout 'mailer/base'
@@ -19,7 +19,7 @@ class ApplicationMailer < ActionMailer::Base
   rescue_from(*ExceptionList::SMTP_EXCEPTIONS, with: :handle_smtp_exceptions)
 
   def smtp_config_set_or_development?
-    ENV.fetch('SMTP_ADDRESS', nil).present? || Rails.env.development?
+    ENV.fetch('RESEND_API_KEY', nil).present? || ENV.fetch('SMTP_ADDRESS', nil).present? || Rails.env.development?
   end
 
   private
