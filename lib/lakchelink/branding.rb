@@ -9,7 +9,8 @@ module Lakchelink
       'BRAND_URL' => 'https://lakchelink.com',
       'WIDGET_BRAND_URL' => 'https://lakchelink.com',
       'TERMS_URL' => 'https://lakchelink.com',
-      'PRIVACY_URL' => 'https://lakchelink.com'
+      'PRIVACY_URL' => 'https://lakchelink.com',
+      'DISPLAY_MANIFEST' => false
     }.freeze
 
     module_function
