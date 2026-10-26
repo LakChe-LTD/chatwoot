@@ -1,3 +1,5 @@
+> **LakcheLink fork.** The branch `lakchelink-main` is LakcheLink, LakChe LLC's customer engagement platform built on Chatwoot. Read [LAKCHELINK.md](LAKCHELINK.md) first. · **Fork LakcheLink.** La branche `lakchelink-main` est LakcheLink, la plateforme d'engagement client de LakChe LLC construite sur Chatwoot. Lisez d'abord [LAKCHELINK.fr.md](LAKCHELINK.fr.md).
+
 <img src="./.github/screenshots/header.png#gh-light-mode-only" width="100%" alt="Header light mode"/>
 <img src="./.github/screenshots/header-dark.png#gh-dark-mode-only" width="100%" alt="Header dark mode"/>
 
