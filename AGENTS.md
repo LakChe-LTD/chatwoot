@@ -111,3 +111,13 @@ Practical checklist for any change impacting core logic or public APIs
 ## Branding / White-labeling note
 
 - For user-facing strings that currently contain "Chatwoot" but should adapt to branded/self-hosted installs, prefer applying `replaceInstallationName` from `shared/composables/useBranding` in the UI layer (for example tooltip and suggestion labels) instead of adding hardcoded brand-specific copy.
+
+---
+
+## LakcheLink fork (LakChe LLC)
+
+This section is fork-only; everything above it is upstream Chatwoot's.
+
+- Branch `lakchelink-main` is LakcheLink. Read [LAKCHELINK.md](LAKCHELINK.md) and the rules in `.claude/rules/` before any change.
+- This repository is public: never commit a credential, a server address, an internal hostname or a personal path.
+- A commit message that starts with `deploy:` or `[deploy]` deploys staging once it lands on `lakchelink-main`.
