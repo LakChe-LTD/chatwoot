@@ -1,5 +1,5 @@
 name: Deploy LakcheLink
-
+# A push to lakchelink-main whose commit message starts with "deploy:" or "[deploy]" deploys to staging.
 on:
   push:
     branches:
