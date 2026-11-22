@@ -59,6 +59,14 @@ jobs:
         with:
           ref: ${{ github.event_name == 'workflow_dispatch' && inputs.git_ref || github.ref }}
 
+      # LakcheLink ships the MIT-licensed Community edition. The enterprise/ folder is
+      # under Chatwoot's commercial licence, and on unlicensed installs its nightly
+      # job resets the branding to "Chatwoot". Same steps as upstream's FOSS image build.
+      - name: 1b. Build as Community edition
+        run: |
+          rm -rf enterprise spec/enterprise
+          echo -en '\nENV CW_EDITION="ce"' >> docker/Dockerfile
+
       - name: 2. Compute image metadata
         run: |
           IMAGE_REPO="$(printf '%s' "ghcr.io/${GITHUB_REPOSITORY_OWNER}/lakchelink-chatwoot" | tr '[:upper:]' '[:lower:]')"
